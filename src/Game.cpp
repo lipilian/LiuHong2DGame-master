@@ -8,13 +8,18 @@
 #include "./Components/TransformComponent.h"
 #include "../lib/glm/glm.hpp"
 #include "./AssetManager.h"
+#include "./Map.h"
 #include "./Components/SpriteComponent.h"
 #include "./Components/KeyboardControlComponent.h"
+#include "./Components/ColliderComponent.h"
 
 EntityManager manager;
 AssetManager* Game::assetManager = new AssetManager(&manager);
 SDL_Renderer* Game::renderer;
 SDL_Event Game::event;
+SDL_Rect Game::camera = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+Map* map;
+
 
 Game::Game(){
     this->isRunning = false;
@@ -57,23 +62,30 @@ void Game::Initialize(int width, int height){
     return;
 }
 
+Entity& player(manager.AddEntity("chopper", PLAYER_LAYER));
+
 void Game::LoadLevel(int levelNumber){
     /* Start including new assets to the assetmanager list */
     assetManager->AddTexture("tank-image", std::string("./assets/images/tank-big-right.png").c_str());
     assetManager->AddTexture("chopper-image", std::string("./assets/images/chopper-spritesheet.png").c_str());
     assetManager->AddTexture("radar-image", std::string("./assets/images/radar.png").c_str());
-  
+    assetManager->AddTexture("jungle-tileTexture", std::string("./assets/tilemaps/jungle.png").c_str());
+
+    map = new Map("jungle-tileTexture", 2, 32);
+    map->LoadMap("./assets/tilemaps/jungle.map", 25, 20);
+
     /* Start including entities and also components to them */
-    Entity& chopperEntity(manager.AddEntity("chopper"));
-    chopperEntity.AddComponent<TransformComponent>(240, 106, 0, 0, 32, 32, 1);
-    chopperEntity.AddComponent<SpriteComponent>("chopper-image", 2, 90, true, false);
-    chopperEntity.AddComponent<KeyboardControlComponent>("up", "right", "down", "left", "space");
+    player.AddComponent<TransformComponent>(240, 106, 0, 0, 32, 32, 1);
+    player.AddComponent<SpriteComponent>("chopper-image", 2, 90, true, false);
+    player.AddComponent<KeyboardControlComponent>("up", "right", "down", "left", "space");
+    player.AddComponent<ColliderComponent>("player", 240, 106, 32, 32);
 
-    Entity& tankEntity(manager.AddEntity("tank"));
-    tankEntity.AddComponent<TransformComponent>(0, 0, 20, 20, 32, 32, 1);
+    Entity& tankEntity(manager.AddEntity("tank", ENEMY_LAYER));
+    tankEntity.AddComponent<TransformComponent>(150, 495, 10, 0, 32, 32, 1);
     tankEntity.AddComponent<SpriteComponent>("tank-image");
+    tankEntity.AddComponent<ColliderComponent>("enemy", 150, 495, 32, 32);
 
-    Entity& radarEntity(manager.AddEntity("Radar"));
+    Entity& radarEntity(manager.AddEntity("Radar", UI_LAYER));
     radarEntity.AddComponent<TransformComponent>(720, 15, 0, 0, 64, 64, 1);
     radarEntity.AddComponent<SpriteComponent>("radar-image", 8, 150, false, true);
 }
@@ -112,6 +124,10 @@ void Game::Update(){
 
     manager.Update(deltaTime);
 
+    // Handle camera movement
+    HandleCameraMovement();
+
+    CheckCollisions();
 }
 
 void Game::Render(){
@@ -125,6 +141,27 @@ void Game::Render(){
     }
 
     SDL_RenderPresent(renderer);
+}
+
+void Game::HandleCameraMovement(){
+    TransformComponent* mainPlayerTransform = player.GetComponent<TransformComponent>();
+
+    camera.x = mainPlayerTransform->position.x - (WINDOW_WIDTH / 2);
+    camera.y = mainPlayerTransform->position.y - (WINDOW_HEIGHT / 2);
+
+    //clamping the value of camera
+    camera.x = camera.x < 0 ? 0 : camera.x;
+    camera.y = camera.y < 0 ? 0 : camera.y;
+    camera.x = camera.x > camera.w ? camera.w : camera.x;
+    camera.y = camera.y > camera.h ? camera.h : camera.y;
+}
+
+void Game::CheckCollisions(){
+    std::string collisionTagType = manager.CheckEntityCollisions(player);
+    if (collisionTagType.compare("enemy") == 0){
+        //TODO:: do something when collision is identified with an enemy
+        isRunning = false;
+    }
 }
 
 void Game::Destroy() {

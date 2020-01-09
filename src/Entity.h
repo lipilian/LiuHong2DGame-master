@@ -6,6 +6,7 @@
 #include <iostream>
 #include "./EntityManager.h"
 #include "./Component.h"
+#include "./Constants.h"
 #include <map>
 
 class Component;
@@ -21,8 +22,9 @@ class Entity {
 
     public:
     std::string name;
+    LayerType layer;
     Entity(EntityManager& manager);
-    Entity(EntityManager& manager, std::string name);
+    Entity(EntityManager& manager, std::string name, LayerType layer);
     void Update(float deltaTime);
     void Render();
     void Destroy();
@@ -43,6 +45,11 @@ class Entity {
         return static_cast<T*>(componentTypeMap[&typeid(T)]);
     }
     
+    template <typename T>
+    bool HasComponent() const {
+        return componentTypeMap.count(&typeid(T));
+    }
+
     template<typename T>
     bool HasComponent() {
         return componentTypeMap.find(&typeid(T)) != componentTypeMap.end();
