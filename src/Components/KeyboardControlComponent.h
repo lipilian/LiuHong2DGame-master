@@ -5,6 +5,7 @@
 #include "../EntityManager.h"
 #include "./TransformComponent.h"
 #include "./SpriteComponent.h"
+#include "./ColliderComponent.h"
 #include "../Constants.h"
 
 class KeyboardControlComponent : public Component {
@@ -14,18 +15,25 @@ class KeyboardControlComponent : public Component {
         std::string leftKey;
         std::string rightKey;
         std::string shootKey;
+        std::string collisionKey;
         TransformComponent *transform;
         SpriteComponent *sprite;
+        ColliderComponent *collider;
 
         KeyboardControlComponent(){}
 
+        KeyboardControlComponent(std::string collisionKey){
+            this->collisionKey = GetSDLKeyStringCode(collisionKey);
+        }
+
         KeyboardControlComponent(std::string upKey, std::string rightKey, std::string downKey, 
-                    std::string leftKey, std::string shootKey){
+                    std::string leftKey, std::string shootKey, std::string collisionKey){
             this->upKey = GetSDLKeyStringCode(upKey);
             this->rightKey = GetSDLKeyStringCode(rightKey);
             this->downKey = GetSDLKeyStringCode(downKey);
             this->leftKey = GetSDLKeyStringCode(leftKey);
             this->shootKey = GetSDLKeyStringCode(shootKey);
+            this->collisionKey = GetSDLKeyStringCode(collisionKey);
         }
 
         std::string GetSDLKeyStringCode(std::string key){
@@ -34,12 +42,14 @@ class KeyboardControlComponent : public Component {
             if (key.compare("left") == 0) return "1073741904";
             if (key.compare("right") == 0) return "1073741903";
             if (key.compare("space") == 0) return "32"; 
+            if (key.compare("collisionKey") == 0) return "99";
             return std::to_string(static_cast<int>(key[0]));
         }
 
         void Initialize() override {
             transform = owner->GetComponent<TransformComponent>();
             sprite = owner->GetComponent<SpriteComponent>();
+            collider = owner->GetComponent<ColliderComponent>();
         }
 
         void Update(float deltaTime) override {
@@ -66,6 +76,9 @@ class KeyboardControlComponent : public Component {
                     transform->velocity.x = 30;
                     sprite->Play("RightAnimation");
                 }
+                if(keyCode.compare(collisionKey) == 0){
+                    collider->keyPressed = true;
+                }
                 if(keyCode.compare(shootKey) == 0){
                     //TODU: shoot missing
                 }
@@ -85,6 +98,9 @@ class KeyboardControlComponent : public Component {
                 }
                 if(keyCode.compare(rightKey) == 0){
                     transform->velocity.x = 0;
+                }
+                if(keyCode.compare(collisionKey) == 0){
+                    collider->keyPressed = false;
                 }
             }
         }
