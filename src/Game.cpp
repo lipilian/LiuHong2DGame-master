@@ -12,6 +12,8 @@
 #include "./Components/SpriteComponent.h"
 #include "./Components/KeyboardControlComponent.h"
 #include "./Components/ColliderComponent.h"
+#include "./Components/TextLabelComponent.h"
+#include "./Components/ProjectileEmitterComponent.h"
 
 EntityManager manager;
 AssetManager* Game::assetManager = new AssetManager(&manager);
@@ -35,6 +37,10 @@ bool Game::IsRunning() const {
 void Game::Initialize(int width, int height){
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         std::cerr << "Error Initializing SDL.." << std::endl;
+        return;
+    }
+    if (TTF_Init() != 0) {
+        std::cerr << "Error Initializing TTF.." << std::endl;
         return;
     }
     window = SDL_CreateWindow(
@@ -72,7 +78,9 @@ void Game::LoadLevel(int levelNumber){
     assetManager->AddTexture("jungle-tileTexture", std::string("./assets/tilemaps/jungle.png").c_str());
     assetManager->AddTexture("collision-boundingBox", std::string("./assets/images/collision-texture.png").c_str());
     assetManager->AddTexture("heliport-image", std::string("./assets/images/heliport.png").c_str());
-    
+    assetManager->AddTexture("projectile-image", std::string("./assets/images/bullet-enemy.png").c_str());
+    assetManager->AddFont("charriot-font", std::string("./assets/fonts/charriot.ttf").c_str(), 14);
+
     map = new Map("jungle-tileTexture", 2, 32);
     map->LoadMap("./assets/tilemaps/jungle.map", 25, 20);
 
@@ -94,9 +102,18 @@ void Game::LoadLevel(int levelNumber){
     tankEntity.AddComponent<ColliderComponent>("enemy", 150, 495, 32, 32, "collision-boundingBox", false);
     tankEntity.AddComponent<KeyboardControlComponent>("collisionKey");
 
+    Entity& projectile(manager.AddEntity("projectile", PROJECTILE_LAYER));
+    projectile.AddComponent<TransformComponent>(150 + 16, 495 + 16, 0, 0, 4, 4, 1);
+    projectile.AddComponent<SpriteComponent>("projectile-image");
+    projectile.AddComponent<ColliderComponent>("projectile", 150 + 16, 495 + 16, 4, 4, "collision-boundingBox", false);
+    projectile.AddComponent<ProjectileEmitterComponent>(50, 270, 200, true);
+
     Entity& radarEntity(manager.AddEntity("Radar", UI_LAYER));
     radarEntity.AddComponent<TransformComponent>(720, 15, 0, 0, 64, 64, 1);
     radarEntity.AddComponent<SpriteComponent>("radar-image", 8, 150, false, true);
+
+    Entity& labelLevelName(manager.AddEntity("LabelLevelName", UI_LAYER));
+    labelLevelName.AddComponent<TextLabelComponent>(10, 10, "First Level...", "charriot-font", WHITE_COLOR);
 }
 
 void Game::ProcessInput() {
@@ -167,6 +184,9 @@ void Game::HandleCameraMovement(){
 void Game::CheckCollisions(){
     CollisionType collisionType = manager.CheckCollisions();
     if (collisionType == PLAYER_ENEMY_COLLISION){
+        ProcessGameOver();
+    }
+    if (collisionType == PLAYER_PROJECTILE_COLLISION){
         ProcessGameOver();
     }
     if (collisionType == PLAYER_LEVEL_COMPLETE_COLLISION){
