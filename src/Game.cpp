@@ -20,6 +20,7 @@ AssetManager* Game::assetManager = new AssetManager(&manager);
 SDL_Renderer* Game::renderer;
 SDL_Event Game::event;
 SDL_Rect Game::camera = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+Entity* mainPlayer = NULL;
 Map* map;
 
 
@@ -62,16 +63,63 @@ void Game::Initialize(int width, int height){
         return;
     }
 
-    LoadLevel(0);
-    manager.ListAllEntities();
+    LoadLevel(1);
     isRunning = true;
     return;
 }
 
-Entity& player(manager.AddEntity("chopper", PLAYER_LAYER));
+//Entity& player(manager.AddEntity("chopper", PLAYER_LAYER));
 
-void Game::LoadLevel(int levelNumber){
-    /* Start including new assets to the assetmanager list */
+void Game::LoadLevel(int levelNumber) {
+    sol::state lua;
+    lua.open_libraries(sol::lib::base, sol::lib::os, sol::lib::math);
+
+    std::string levelName = "Level" + std::to_string(levelNumber);
+    lua.script_file("./assets/scripts/" + levelName + ".lua");
+
+    /*********************************************/
+    /* LOADS ASSETS FROM LUA CONFIG FILE         */
+    /*********************************************/
+    sol::table levelData = lua[levelName];
+    sol::table levelAssets = levelData["assets"];   
+ 
+    unsigned int assetIndex = 0;
+    while (true) {
+        sol::optional<sol::table> existsAssetIndexNode = levelAssets[assetIndex]; 
+        if (existsAssetIndexNode == sol::nullopt) {
+            break;
+        } else {
+            sol::table asset = levelAssets[assetIndex];
+            std::string assetType = asset["type"];
+            if (assetType.compare("texture") == 0) {
+                std::string assetId = asset["id"];
+                std::string assetFile = asset["file"];
+                assetManager->AddTexture(assetId, assetFile.c_str());
+            } 
+        }
+        assetIndex++;
+    }
+
+    /*********************************************/
+    /* LOADS MAP FROM LUA CONFIG FILE            */
+    /*********************************************/
+    sol::table levelMap = levelData["map"];
+    std::string mapTextureId = levelMap["textureAssetId"];
+    std::string mapFile = levelMap["file"];
+
+    map = new Map(
+        mapTextureId,
+        static_cast<int>(levelMap["scale"]),
+        static_cast<int>(levelMap["tileSize"])
+    );
+
+    map->LoadMap(
+        mapFile,
+        static_cast<int>(levelMap["mapSizeX"]),
+        static_cast<int>(levelMap["mapSizeY"])
+    );
+}
+    /* //Start including new assets to the assetmanager list 
     assetManager->AddTexture("tank-image", std::string("./assets/images/tank-big-right.png").c_str());
     assetManager->AddTexture("chopper-image", std::string("./assets/images/chopper-spritesheet.png").c_str());
     assetManager->AddTexture("radar-image", std::string("./assets/images/radar.png").c_str());
@@ -84,7 +132,7 @@ void Game::LoadLevel(int levelNumber){
     map = new Map("jungle-tileTexture", 2, 32);
     map->LoadMap("./assets/tilemaps/jungle.map", 25, 20);
 
-    /* Start including entities and also components to them */
+    //Start including entities and also components to them 
     player.AddComponent<TransformComponent>(240, 106, 0, 0, 32, 32, 1);
     player.AddComponent<SpriteComponent>("chopper-image", 2, 90, true, false);
     player.AddComponent<ColliderComponent>("player", 240, 106, 32, 32, "collision-boundingBox", false);
@@ -115,7 +163,7 @@ void Game::LoadLevel(int levelNumber){
     Entity& labelLevelName(manager.AddEntity("LabelLevelName", UI_LAYER));
     labelLevelName.AddComponent<TextLabelComponent>(10, 10, "First Level...", "charriot-font", WHITE_COLOR);
 }
-
+*/
 void Game::ProcessInput() {
     SDL_PollEvent(&event);
     switch (event.type) {
@@ -161,24 +209,24 @@ void Game::Render(){
 
     if(manager.HasNoEntities()){
         return;
-    } else {
-        manager.Render();
-    }
-
+    } 
+    manager.Render();
+    
     SDL_RenderPresent(renderer);
 }
 
 void Game::HandleCameraMovement(){
-    TransformComponent* mainPlayerTransform = player.GetComponent<TransformComponent>();
+    if (mainPlayer){
+        TransformComponent* mainPlayerTransform = mainPlayer->GetComponent<TransformComponent>();
+        camera.x = mainPlayerTransform->position.x - (WINDOW_WIDTH / 2);
+        camera.y = mainPlayerTransform->position.y - (WINDOW_HEIGHT / 2);
 
-    camera.x = mainPlayerTransform->position.x - (WINDOW_WIDTH / 2);
-    camera.y = mainPlayerTransform->position.y - (WINDOW_HEIGHT / 2);
-
-    //clamping the value of camera
-    camera.x = camera.x < 0 ? 0 : camera.x;
-    camera.y = camera.y < 0 ? 0 : camera.y;
-    camera.x = camera.x > camera.w ? camera.w : camera.x;
-    camera.y = camera.y > camera.h ? camera.h : camera.y;
+        //clamping the value of camera
+        camera.x = camera.x < 0 ? 0 : camera.x;
+        camera.y = camera.y < 0 ? 0 : camera.y;
+        camera.x = camera.x > camera.w ? camera.w : camera.x;
+        camera.y = camera.y > camera.h ? camera.h : camera.y;
+    }
 }
 
 void Game::CheckCollisions(){
