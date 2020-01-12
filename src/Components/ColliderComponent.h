@@ -26,6 +26,12 @@ class ColliderComponent : public Component {
             texture = Game::assetManager->GetTexture(id);
         }
 
+        ColliderComponent(std::string colliderTag, int x, int y, int width, int height){
+            this->colliderTag = colliderTag;
+            this->collider = {x,y,width,height};
+            this->keyPressed = false;
+        }
+
         void Initialize() override {
             if(owner->HasComponent<TransformComponent>()){
                 transform = owner->GetComponent<TransformComponent>();
