@@ -4,6 +4,6 @@ This project use SDL library and Lua embeded C++ code create 2D game Engine abou
 OS system
 # Denpendency
 Install sdl2: 
-'''
+```
 $sudo apt-get install libsdl2-dev
-'''
+```
