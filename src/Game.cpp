@@ -95,7 +95,13 @@ void Game::LoadLevel(int levelNumber) {
                 std::string assetId = asset["id"];
                 std::string assetFile = asset["file"];
                 assetManager->AddTexture(assetId, assetFile.c_str());
-            } 
+            }
+            if (assetType.compare("font") == 0) {
+                std::string assetId = asset["id"];
+                std::string assetFile = asset["file"];
+                int fontSize = asset["fontSize"];
+                assetManager->AddFont(assetId, assetFile.c_str(), fontSize);
+            }
         }
         assetIndex++;
     }
@@ -208,9 +214,51 @@ void Game::LoadLevel(int levelNumber) {
                     }
                 }
             }
+            // Add projectile emitter component
+            sol::optional<sol::table> existsProjectileEmitterComponent = entity["components"]["projectileEmitter"];
+            if (existsProjectileEmitterComponent != sol::nullopt) {
+                int parentEntityXPos = entity["components"]["transform"]["position"]["x"];
+                int parentEntityYPos = entity["components"]["transform"]["position"]["y"];
+                int parentEntityWidth = entity["components"]["transform"]["width"];
+                int parentEntityHeight = entity["components"]["transform"]["height"];
+                int projectileWidth = entity["components"]["projectileEmitter"]["width"];
+                int projectileHeight = entity["components"]["projectileEmitter"]["height"];
+                int projectileSpeed = entity["components"]["projectileEmitter"]["speed"];
+                int projectileRange = entity["components"]["projectileEmitter"]["range"];
+                int projectileAngle = entity["components"]["projectileEmitter"]["angle"];
+                bool projectileShouldLoop = entity["components"]["projectileEmitter"]["shouldLoop"];
+                std::string textureAssetId = entity["components"]["projectileEmitter"]["textureAssetId"];
+                Entity& projectile(manager.AddEntity("projectile", PROJECTILE_LAYER));
+                projectile.AddComponent<TransformComponent>(
+                    parentEntityXPos + (parentEntityWidth / 2),
+                    parentEntityYPos + (parentEntityHeight / 2),
+                    0,
+                    0,
+                    projectileWidth,
+                    projectileHeight,
+                    1
+                );
+                projectile.AddComponent<SpriteComponent>(textureAssetId);
+                projectile.AddComponent<ProjectileEmitterComponent>(
+                    projectileSpeed,
+                    projectileAngle,
+                    projectileRange,
+                    projectileShouldLoop
+                );
+                projectile.AddComponent<ColliderComponent>(
+                    "projectile",
+                    parentEntityXPos,
+                    parentEntityYPos,
+                    projectileWidth,
+                    projectileHeight
+                );
+            }
+            // end of componet entity component loading
         }
         entityIndex++;
     }
+    Entity& labelLevelName(manager.AddEntity("LabelLevelName", UI_LAYER));
+    labelLevelName.AddComponent<TextLabelComponent>(10, 10, "LiuHong Game First Level...", "charriot-font", WHITE_COLOR);
     mainPlayer = manager.GetEntityByName("player");
 }
     /* //Start including new assets to the assetmanager list 

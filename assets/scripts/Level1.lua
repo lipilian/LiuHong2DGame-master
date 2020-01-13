@@ -1,3 +1,14 @@
+-- Get the current time of the day from the os
+local currentSystemHour = os.date("*t").hour
+local mapTextureAssetId = "terrain-texture-day"
+
+--Use a night map or a day map
+if currentSystemHour > 9 and currentSystemHour < 21 then
+    mapTextureAssetId = "terrain-texture-day"
+else
+    mapTextureAssetId = "terrain-texture-night"
+end
+
 Level1 = {
     assets = {
         [0] = { type="texture", id = "terrain-texture-day", file = "./assets/tilemaps/jungle.png" },
@@ -38,7 +49,7 @@ Level1 = {
         [35] = { type="texture", id = "collision-boundingBox", file = "./assets/images/collision-texture.png"}
     },
     map = {
-        textureAssetId = "terrain-texture-night",
+        textureAssetId = mapTextureAssetId,
         file = "./assets/tilemaps/jungle.map",
         scale = 2,
         tileSize = 32,
@@ -87,6 +98,135 @@ Level1 = {
                     }
                 }
             }
+        },
+        [1] = {
+            name = "start",
+            layer = 3,
+            components = {
+                transform = {
+                    position = {
+                        x = 240,
+                        y = 115
+                    },
+                    velocity = {
+                        x = 0,
+                        y = 0
+                    },
+                    width = 32,
+                    height = 32,
+                    scale = 1,
+                    rotation = 0
+                },
+                sprite = {
+                    textureAssetId = "start-texture",
+                    animated = false
+                }
+            }
+        },
+        [2] = {
+            name = "heliport",
+            layer = 3,
+            components = {
+                transform = {
+                    position = {
+                        x = 1395,
+                        y = 495
+                    },
+                    velocity = {
+                        x = 0,
+                        y = 0
+                    },
+                    width = 32,
+                    height = 32,
+                    scale = 1,
+                    rotation = 0
+                },
+                sprite = {
+                    textureAssetId = "heliport-texture",
+                    animated = false
+                },
+                collider = {
+                    tag = "level_complete",
+                    boundingBox = true
+                },
+                input = {
+                    keyboard = {
+                        collision = "collisionKey"
+                    }
+                }
+            }
+        },
+        [3] = {
+            name = "tank1",
+            layer = 2,
+            components = {
+                transform = {
+                    position = {
+                        x = 650,
+                        y = 405
+                    },
+                    velocity = {
+                        x = 0,
+                        y = 0
+                    },
+                    width = 32,
+                    height = 32,
+                    scale = 1,
+                    rotation = 0
+                },
+                sprite = {
+                    textureAssetId = "tank-big-left-texture",
+                    animated = false
+                },
+                collider = {
+                    tag = "enemy",
+                    boundingBox = true
+                },
+                projectileEmitter = {
+                    speed = 70,
+                    range = 300,
+                    angle = 180,
+                    width = 4,
+                    height = 4,
+                    shouldLoop = true,
+                    textureAssetId = "projectile-texture"
+                },
+                input = {
+                    keyboard = {
+                        collision = "collisionKey"
+                    }
+                }
+            }
+        },
+        [4] = {
+            name = "radar",
+            layer = 6,
+            components = {
+                transform = {
+                    position = {
+                        x = 720,
+                        y = 15
+                    },
+                    velocity = {
+                        x = 0,
+                        y = 0
+                    },
+                    width = 64,
+                    height = 64,
+                    scale = 1,
+                    rotation = 0
+                },
+                sprite = {
+                    textureAssetId = "radar-texture",
+                    animated = true,
+                    frameCount = 8,
+                    animationSpeed = 150,
+                    hasDirections = false,
+                    fixed = true
+                }
+            }
         }
+
+        --end of the entity adding
     }
 }
