@@ -5,5 +5,21 @@ OS system
 # Denpendency
 Install sdl2: 
 ```
-$sudo apt-get install libsdl2-dev
+$brew install sdl2
+```
+install sdl2 image:
+```
+$brew install sdl2_image
+```
+Install sdl2 font support:
+```
+$brew install sdl2_ttf
+```
+Install sdl2 mixer:
+```
+$brew install sdl2_mixer
+```
+install lua:
+```
+$brew install lua
 ```
